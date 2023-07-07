@@ -1,0 +1,133 @@
+from random import randint as rand
+
+
+#descifra el texto tomando la clave de recuperacion recover. Mediante el resto de la cantidad
+#de caracteres almacenados en el diccionario, se puede sacar la distancia que debe moverse
+#el caracter cifrado. Se intenta mover el caracter a la izquierda del diccionario restando el resto obtenido del recovery y 
+#si se pasa de los limites del diccionario (key -1 KeyError) intenta desplazarse a la derecha del diccionario con el except
+def descifrado(texto_cifrado, recovery, diccionario={0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h', 8: 'i', 9: 'j', 10: 'k', 11: 'l', 12: 'm', 13: 'n', 14: 'ñ', 15: 'o', 16: 'p', 17: 'q', 18: 'r', 19: 's', 20: 't', 21: 'u', 22: 'v', 23: 'w', 24: 'x', 25: 'y', 26: 'z', 27: 'A', 28: 'B', 29: 'C', 30: 'D', 31: 'E', 32: 'F', 33: 'G', 34: 'H', 35: 'I', 36: 'J', 37: 'K', 38: 'L', 39: 'M', 40: 'N', 41: 'Ñ', 42: 'O', 43: 'P', 44: 'Q', 45: 'R', 46: 'S', 47: 'T', 48: 'U', 49: 'V', 50: 'W', 51: 'X', 52: 'Y', 53: 'Z', 54: ' ', 55: '~', 56: '*', 57: '-', 58: '+', 59: '!', 60: '·', 61: '$', 62: '%', 63: '&', 64: '/', 65: '(', 66: ')', 67: '=', 68: '?', 69: '¿', 70: '¡', 71: "'"}):
+    #split se usa para transformar cadenas de texto a listas con un separador
+    recovery = recovery.split(',')
+    lista_cifrada=[]
+    for i in range(len(recovery)):
+        #dado que el sumador de randoms se resetea con la ultima clave del
+        #diccionario, podemos sacar el resto para ver la cantidad de caracteres sobrantes
+        #que hay que restar a la cadena de texto para conseguir el valor original
+        recovery[i]=int(recovery[i])%len(diccionario)
+    #print(recovery)
+    
+    for i in texto_cifrado:
+        lista_cifrada.append(i)
+    #print(lista_cifrada)
+    
+    for i in range(len(lista_cifrada)):
+        #print(recovery[i])
+        try:
+            #print(posicion_inicio-recovery)
+            lista_cifrada[i]=diccionario[localizador_clave_diccionario(i,diccionario,lista_cifrada)-recovery[i]]
+        except KeyError:
+            #print(longitud_diccionario-recovery+posicion_inicio)
+            lista_cifrada[i]=diccionario[len(diccionario)-recovery[i]+localizador_clave_diccionario(i,diccionario,lista_cifrada)]
+    return lista_cifrada
+        
+        
+
+#Localiza la clave del diccionario asociada al caracter a cifrar
+#para que al sumarle el valor aleatorio se registre el cambio de ubicacion en la lista con claves aleatorias
+def localizador_clave_diccionario(numero_de_caracter,diccionario,texto_procesar):
+        for clave in range(len(diccionario)):
+            if texto_procesar[numero_de_caracter]==diccionario[clave]:
+                clave_caracter=clave
+                #print("valor actual de texto a procesar: ", clave_caracter,"\n")
+                return clave_caracter
+        try:
+            raise NameError('CaracterDesconocido')
+        except NameError:
+            print(f"Error fatal, el caracter '{texto_procesar[numero_de_caracter]}' no existe en el diccionario")
+            raise
+
+
+
+#Sumatorio de las listas temporales que almacenan el sumatorio
+# del valor random con la posicion numerica original del texto a modificar en
+# la funcion recursiva cifrado()
+def generador_clave_de_recuperacion(lista_con_claves_aleatorias,recover):
+    #print("valor individual de lista temporal\n:", lista_con_claves_aleatorias)
+    j=0
+    for i in lista_con_claves_aleatorias:
+        #Es necesario try except IndexError para evitar error de out of range
+        try:
+            recover[j] += int(i)
+            j+=1
+        except IndexError:
+            recover.append(0)
+            recover[j] += int(i)
+            j+=1
+    #print("recover", recover)
+    return recover
+
+
+
+#encriptador. Combina la ubicacion de la clave asociada a un caracter en el diccionario
+# con un valor random: lo suma y se guarda en una lista texto_a_cifrar el caracter modificado buscando el valor
+#numerico en el diccionario. Y luego llama a la funcion generador_clave_de_recuperacion
+#para almacenar la lista temporal texto_a_cifrar en una lista global que contiene el suma
+#torio de todas las capas
+#las capas de cifrado que añadas indica la cantidad de veces que repite este proceso
+def cifrado(texto_a_cifrar, key, caracteres={0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h', 8: 'i', 9: 'j', 10: 'k', 11: 'l', 12: 'm', 13: 'n', 14: 'ñ', 15: 'o', 16: 'p', 17: 'q', 18: 'r', 19: 's', 20: 't', 21: 'u', 22: 'v', 23: 'w', 24: 'x', 25: 'y', 26: 'z', 27: 'A', 28: 'B', 29: 'C', 30: 'D', 31: 'E', 32: 'F', 33: 'G', 34: 'H', 35: 'I', 36: 'J', 37: 'K', 38: 'L', 39: 'M', 40: 'N', 41: 'Ñ', 42: 'O', 43: 'P', 44: 'Q', 45: 'R', 46: 'S', 47: 'T', 48: 'U', 49: 'V', 50: 'W', 51: 'X', 52: 'Y', 53: 'Z', 54: ' ', 55: '~', 56: '*', 57: '-', 58: '+', 59: '!', 60: '·', 61: '$', 62: '%', 63: '&', 64: '/', 65: '(', 66: ')', 67: '=', 68: '?', 69: '¿', 70: '¡', 71: "'"}, recover=[]): 
+  if key==0:
+    #Con join nos cargamos las listas usadas durante el cifrado para facilitar el manejo de los datos encriptados y clave de recuperacion transformando las listas a string
+    return "texto cifrado:", ''.join(texto_a_cifrar), "clave de recuperacion:", ','.join(str(x) for x in recover)
+
+  elif key>0:
+    texto_a_cifrar=list(texto_a_cifrar)
+    lista_con_claves_aleatorias=[]
+    
+    for numero_de_caracter in range(len(texto_a_cifrar)):
+        randomizador_diccionario=rand(0, len(caracteres))
+        
+        if randomizador_diccionario+localizador_clave_diccionario(numero_de_caracter, caracteres, texto_a_cifrar)<len(caracteres):
+            texto_a_cifrar[numero_de_caracter]=caracteres[randomizador_diccionario+localizador_clave_diccionario(numero_de_caracter, caracteres, texto_a_cifrar)]
+            #print("success1 ubicaciondecaracter:", numero_de_caracter, "caracter nuevo '",texto_a_cifrar[numero_de_caracter], "' cantidad agregada:",randomizador_diccionario,"\n")
+        
+        elif randomizador_diccionario+localizador_clave_diccionario(numero_de_caracter, caracteres, texto_a_cifrar)==len(caracteres):
+            texto_a_cifrar[numero_de_caracter]=caracteres[0]
+            #print("success2 ubicaciondecaracter:", numero_de_caracter, "caracter nuevo '",texto_a_cifrar[numero_de_caracter], "' cantidad agregada:",randomizador_diccionario,"\n")
+            
+        elif randomizador_diccionario+localizador_clave_diccionario(numero_de_caracter, caracteres, texto_a_cifrar)>len(caracteres):
+            reasignador=randomizador_diccionario+localizador_clave_diccionario(numero_de_caracter, caracteres, texto_a_cifrar)-len(caracteres)
+            texto_a_cifrar[numero_de_caracter]=caracteres[reasignador]
+            #print("success3 ubicaciondecaracter:", numero_de_caracter, "caracter nuevo '",texto_a_cifrar[numero_de_caracter],"' cantidad agregada:",randomizador_diccionario,"\n")
+            
+        lista_con_claves_aleatorias.append(randomizador_diccionario)  
+    key-=1
+    
+    clave_recuperacion=generador_clave_de_recuperacion(lista_con_claves_aleatorias,recover)
+        
+    return cifrado(texto_a_cifrar,key, caracteres, clave_recuperacion)
+
+  else:
+     try:
+         raise NameError('ClaveDeConversionErronea')
+     except NameError:
+         print("Error fatal")
+         raise
+
+
+print("INTRUCCIONES")
+print("Selecciona 1 para desencriptar, 2 para encriptar")
+print("Si quieres desencriptar pega el contenido SIN INCLUIR LAS COMILLAS ''")
+print("ADVERTENCIA: El diccionario de desencriptacion debe ser el mismo que usaste para encriptar.")
+print("Si hiciste alguna modificacion en el diccionario de desencriptacion perderas todo lo que hubieras encriptado")
+seleccion=input("Selecciona una opcion\n: ")
+
+if seleccion=="1":
+    lista=input("Introduzca todo el contenido del texto cifrado contenido en las comillas '': ")
+    clave=input("Introduzca todo el contenido de la clave de recuperacion contenida en las comillas '': ")
+    print("El texto descifrado es:",''.join(descifrado(lista,clave)))
+    
+elif seleccion=="2":
+    entrada=input("Escribe el texto a cifrar\n:")
+    print("A continuacion escribe un numero.")
+    capas=int(input("Cuantas capas de seguridad quieres agregar?\n:"))
+    print(cifrado(entrada,capas))
