@@ -1,0 +1,169 @@
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from decimal import Decimal
+
+entrada = float(input("que numero quieres procesar\n:"))
+print("Procesando, espere por favor")
+
+lista = []
+
+celsius = [-40, -10, 0, 8, 15, 22, 38, 40]
+fahrenheit = [-40, 14, 32, 46.4, 59, 71.6, 100.4, 104]
+
+
+capa1 = tf.keras.layers.Dense(units=3, input_shape=[1])
+intermedia = tf.keras.layers.Dense(units=3)
+salida = tf.keras.layers.Dense(units=1)
+modelo = tf.keras.Sequential([capa1, intermedia, salida])
+modelo.compile(
+    optimizer=tf.keras.optimizers.Adam(0.1),
+    loss='mean_squared_error'
+)
+def entrenar_modelo():
+    #print("Comenzando entrenamiento...")
+    historial = modelo.fit(celsius, fahrenheit, epochs=150, verbose=False)
+    #print("Modelo entrenado!")
+    return historial
+
+def iniciar_modelo_y_grafica():   
+    plt.xlabel("Progreso")
+    plt.ylabel("Tasa de fallos")
+    plt.plot(entrenar_modelo().history["loss"])
+
+
+def ajustar_decimales(lista_final):
+    longitud_lista = -1
+    #print("entrada:", lista_final)
+    resultado = ''.join(lista_final)
+    resultado = Decimal(resultado)
+
+    if contar_decimales(resultado)>1:
+        for i in range(len(lista_final)):
+            longitud_lista+=1
+            try:
+                if lista_final[i-2]=='.':
+                    converter= int(lista_final[i])
+                    #print("converter:",converter)
+                    if converter>=5:
+                        if lista_final[i-1] =='9':
+                            modificar=int(lista_final[i-1])+1
+                            lista_final[i-1] = str(modificar)
+                            lista_final=lista_final[:i]
+
+                            if lista_final[i-1] == '9' or lista_final[i-1] == '10':  
+                                modificar=int(lista_final[i-3])+1
+                                #print(modificar)
+                                lista_final[i-3] = str(modificar)
+                                lista_final=lista_final[:i-2]
+                                for j in range(longitud_lista):
+                                    #print("j:",j)
+                                    #print("i:",i)
+                                    #print("operacion:",lista_final[i+((-1)*(j+3))])
+                                    #print(type(lista_final[i+((-1)*(j+3))]))
+                                    try:
+                                        if lista_final[i+((-1)*(j+3))] == '10':
+                                            modificar=int(lista_final[i+((-1)*(j+4))])+1
+                                            #print(modificar)
+                                            lista_final[i+((-1)*(j+4))] = str(modificar)
+                                            lista_final[i+((-1)*(j+3))] = '0'
+                                        else:
+                                            break
+                                    except IndexError:
+                                        break
+                        if int(lista_final[i-1]) % 2 !=0:
+                            modificar=int(lista_final[i-1])+1
+                            lista_final[i-1] = str(modificar)
+                            lista_final=lista_final[:i]
+                    
+                    else:
+                        lista_final=lista_final[:i]
+                        #print("control:", lista_final)
+                        #print(i)
+
+
+            except IndexError:
+                break
+    resultado = ''.join(lista_final)
+    resultado = Decimal(resultado)
+    if contar_decimales(resultado)>1:
+        print(contar_decimales(resultado))
+        lista_final="Ha ocurrido algún error al procesar los datos, inténtelo de nuevo"
+    #print("salida:",lista_final)
+    return lista_final
+        
+print("Comenzando test inicial...")
+iniciar_modelo_y_grafica()
+resultado = modelo.predict([entrada])
+print("El resultado es " + str(resultado[0][0]) + " fahrenheit!\n")
+
+def mejorar_base_de_datos():
+    celsius.append(celsius[-1]+5)
+    fahrenheit.append(round(float(modelo.predict([celsius[-1]]))))
+
+def contar_decimales(numero):
+    decimal_str = str(Decimal(numero))
+    if '.' in decimal_str:
+        return len(decimal_str.split('.')[-1])
+    else:
+        return 0
+
+ajuste = 1
+contador=0
+print("Iniciando motor")
+while ajuste !=0:
+    contador+=1
+    print(f"{contador}/10")
+    mejorar_base_de_datos()  
+    iniciar_modelo_y_grafica()
+    resultado = modelo.predict([entrada])
+    if contador>1:
+        lista.append(str(resultado[0][0]))
+    #print("lista:", lista)
+    #print("El resultado es " + str(resultado) + " fahrenheit!")
+        
+    if contador>9:        
+        diccionario = {}
+        
+        #Generar diccionario que separa cada "modelo.predict" almacenado en "lista" en caracteres
+        for i in range(len(lista)):
+            lista_caracteres = []
+            for j in lista[i]:
+                lista_caracteres.append(j)
+            diccionario[i] = lista_caracteres
+        #print(diccionario)
+
+        lista_final = []
+        
+        #Recorrer y almacenar cada caracter del diccionario por orden de posicion y almacenar 
+        #maximo valor en lista_final. Se detiene bucle while
+        for i in range(len(diccionario[0])):
+            lista_caracteres = []
+            for j in range(len(diccionario)):
+                try:
+                    lista_caracteres.append(diccionario[j][i])
+                except IndexError:
+                    #print(f"se estaba intentando imprimir diccionario[{j}][{i}]")
+                    lista_caracteres.append('0')
+            lista_final.append(max(lista_caracteres, key=lista_caracteres.count))
+        #print("lista_final:", lista_final)
+        break
+        #print(ordenar_diccionario)
+
+
+"""
+print(celsius)
+print(fahrenheit)
+print(capa.get_weights())
+
+print("diccionario:", diccionario)
+print("lista final:", lista_final)
+"""
+   
+#iniciar_modelo_y_grafica()
+
+lista_final = ajustar_decimales(lista_final)
+if lista_final == "Ha ocurrido algún error al procesar los datos, inténtelo de nuevo":
+        print(lista_final)
+else:
+    resultado = ''.join(lista_final)
+    print("El resultado es " + str(resultado) + " fahrenheit!")
