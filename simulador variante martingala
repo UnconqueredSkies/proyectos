@@ -1,0 +1,184 @@
+import random
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.linear_model import LinearRegression
+
+lista_tiradas = []
+lista_saldo = []
+lista_mitad = []
+comprobante_final_tiradas = 0
+
+class Estado:
+    def __init__(self, balance, minima, maxima, apuestaini, tiradas):
+        self.balance = balance
+        self.minima = minima
+        self.maxima = maxima
+        self.apuestaini = apuestaini
+        self.tiradas = tiradas
+        
+    @property
+    def saldo(self):
+        return self.balance
+    
+    @saldo.setter
+    def ajuste_saldo(self, valor):
+        self.balance = valor
+
+class Apuestas(Estado):
+    seleccion_inicial = None
+    apuesta = None
+    
+    def __init__(self, balance, minima, maxima, apuestaini, tiradas, mitad, tercio, losepoint):
+        super().__init__(balance, minima, maxima, apuestaini, tiradas)
+        self.mitad = mitad
+        self.tercio = tercio
+        self.losepoint = losepoint
+
+    def inicio(self, entrada):
+        
+        if entrada == "1":
+            origenmitad = tuple(map(lambda x:x+1, range(0,18)))
+            origentercio = tuple(map(lambda x:x+1, range(23,36)))
+        
+        elif entrada == "2":
+            origenmitad = tuple(map(lambda x:x+1, range(18,36)))
+            origentercio = tuple(map(lambda x:x+1, range(0,12)))
+            
+        else:
+            try:
+                raise NameError('SeleccionNoAdmitida')
+            except NameError:
+                print("La opcion seleccionada no se puede aplicar a la estrategia actual")
+                raise
+
+        return origenmitad, origentercio
+    
+    @property
+    def check_inicio(self):
+        return Apuestas.seleccion_inicial
+    
+    @check_inicio.setter
+    def fin_inicio(self,cambio):
+        Apuestas.seleccion_inicial=cambio
+        return Apuestas.seleccion_inicial
+    
+    def contador_mitad(self):
+        if escenario.mitad[0] == 1:
+            lista_mitad.append(0)
+        if escenario.mitad[0] == 19:
+            lista_mitad.append(1)
+            
+    def contador_tiradas_saldo(self):
+        lista_tiradas.append(escenario.tiradas)
+        lista_saldo.append(escenario.saldo)
+    
+    
+    def condicion(self, resultado):
+        print(f"saldo: {escenario.saldo}\nmitad seleccionada: {escenario.mitad}\ntercio seleccionado:{escenario.tercio}\nnumero : {resultado}")
+        escenario.contador_mitad()
+            
+        for numero in self.mitad:
+            if numero == resultado:
+                escenario.ajuste_saldo += Apuestas.apuesta*2 - (Apuestas.apuesta+Apuestas.apuesta//2)
+
+                if self.mitad[0] == 19 and [y for y in self.mitad[0:5] if y == resultado]:
+                    #print("Resultado esta entre 19 y 24 inclusive")
+                    
+                    self.mitad = tuple(map(lambda x:x+1, range(0,18)))
+                    self.tercio = tuple(map(lambda x:x+1, range(23,36)))
+                    Apuestas.apuesta = self.apuestaini*4
+                    
+                    
+                elif self.mitad[0] == 1 and [x for x in self.mitad[12:18] if x == resultado]:
+                    #print("Resultado esta entre 13 y 18 inclusive")
+                    
+                    self.mitad = tuple(map(lambda x:x+1, range(18,36)))
+                    self.tercio = tuple(map(lambda x:x+1, range(0,12)))
+                    Apuestas.apuesta = self.apuestaini*4
+                    
+                
+                else:
+                    Apuestas.apuesta = self.apuestaini
+                print("MITAD detectada")
+                return
+                
+        for numero in self.tercio:
+            if numero == resultado:
+                print("TERCIO detectado")
+                return
+        
+        escenario.ajuste_saldo -= Apuestas.apuesta + Apuestas.apuesta//2
+        print("PERDIDA")
+        
+        if Apuestas.apuesta * 4 <= self.maxima:
+            Apuestas.apuesta *= 4
+        else:
+            try:
+                raise NameError('He Palmado')
+            except NameError:
+                print("La apuesta supera saldo maximo permitido")
+                raise
+        return              
+    
+    @staticmethod
+    def random():
+        return random.randint(0,37)
+    
+    def estrategia(self):
+        if self.tiradas == 0:
+            print("fin del programa")
+            return
+        
+        elif escenario.check_inicio == None:
+            
+            self.mitad, self.tercio = escenario.inicio(entrada)
+            escenario.fin_inicio = "Terminado"
+            print(escenario.check_inicio)
+            Apuestas.apuesta = self.apuestaini
+            
+            tirada = escenario.random()
+            escenario.condicion(tirada)
+            
+            
+        elif self.tiradas>0:
+            
+            tirada = escenario.random()
+            escenario.condicion(tirada)
+            #print(f"saldo: {escenario.saldo}, mitad seleccionada: {escenario.mitad}, numero : {tirada}")
+            
+        
+        escenario.tiradas-=1
+        print(" FIN tiradas restantes:",escenario.tiradas,"saldo actual:",escenario.saldo,"\n")
+        escenario.contador_tiradas_saldo()
+        #print(lista_saldo)
+        return escenario.estrategia()
+
+
+def big_data():
+    lista_mitad.reverse()
+    lista_tiradas.reverse()
+    # Crear la matriz de características
+    matriz = np.array([lista_tiradas, lista_saldo]).T
+
+    # Crear el vector de resultados
+    y = np.array(lista_saldo).reshape(-1, 1)  # Convertir a matriz 2D con una sola columna
+
+    # Realizar la regresión lineal
+    regresion_lineal = LinearRegression()
+    regresion_lineal.fit(matriz, y)
+
+    # Realizar predicciones
+    predicciones = regresion_lineal.predict(matriz)
+
+    # Visualizar los datos y la regresión lineal
+    plt.scatter(lista_tiradas, lista_saldo)
+    plt.plot(lista_tiradas, predicciones.flatten(), color='red', linewidth=2)  # Utilizar predicciones.flatten()
+    plt.xlabel('Tiradas')
+    plt.ylabel('Saldo')
+    plt.title('SALDO RESPECTO A NUMERO DE TIRADAS')
+    plt.show()
+            
+entrada = input("1:1-18, 2:19-36\n:")
+escenario = Apuestas(30000, 1, 30000, 2, 2000, 0, 0, 0)
+escenario.estrategia()
+big_data()
