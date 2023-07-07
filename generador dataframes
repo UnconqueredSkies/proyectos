@@ -164,7 +164,7 @@ def generar_diccionario(indice, datos):
         print("\033[91m##############################ERROR##########################\033[0m")
         print("El archivo de datos csv tiene una estructura inconsistente.\n1. Por favor revise que el separador de los datos coincidan con el separador de las claves.")
         print("2. Revise que el header seleccionado contenga todas las columnas de datos:\n")
-        return None
+        return datos
     
 ########EJECUCION###########
 
