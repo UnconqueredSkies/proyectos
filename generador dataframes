@@ -1,0 +1,179 @@
+###############VARIABLES######################
+#Valores de entrada para iniciar la conversion
+lista = ['Unnamed: 0,Unnamed: 1,Unnamed: 2,Unnamed: 3,Hola    ,que    ,tal    ', ',,,,1   ,2   ,3   ']
+lista_indices_extra = [['Unnamed: 0','Unnamed: 1','Unnamed: 2','Unnamed: 3','Hola    ','que    ','tal    ']]
+lista_indices_extra = [[str(column) for column in sublist] for sublist in lista_indices_extra]
+
+print(len(lista_indices_extra))
+print(len(lista))
+##############FUNCIONES E INDICACIONES:##############
+#Funciones que procesan el rdd para su transformacion a dataframe.
+####
+
+#Funcion MASTER: Afecta a todas las funciones, modificar con precaucion
+#Funcion NUMERADA: Afecta a las funciones que contengan la misma numeración
+
+def master_1_comprobador_separador(primera_fila):
+    if ',' in primera_fila:
+        separador = ","
+    else:
+        separador = ";"
+    return separador
+
+def master_1_contar_separador(primera_fila):
+    return primera_fila.count(separador)
+    
+
+
+def generador_indice(primera_fila):
+    lista_indice = []
+    j=0
+    contar_comas = 0
+    for i in range(len(primera_fila)):
+        if primera_fila[i]==separador and lista_indice != []:
+            contar_comas+=1
+            indice = primera_fila[j+1:i].strip()
+            lista_indice.append(indice)
+            j=i
+            if contar_comas == numero_comas:
+                contar_comas=0
+                indice = primera_fila[i+1:].strip()
+                lista_indice.append(indice)
+                break
+        
+        if primera_fila[i]==separador and lista_indice == []:
+            contar_comas+=1
+            indice = primera_fila[:i].strip()
+            lista_indice.append(indice)
+            j=i
+        indice = ""
+    return lista_indice
+
+def generador_contenido(rdd):
+    k=0
+    lista_contenido = []
+    diccionario_contenido = {}
+    contar_comas = 0
+    for i in range(len(rdd)):
+        try:
+            for j in range(len(rdd[i+1])):
+                if rdd[i+1][j]==separador and lista_contenido != []:
+                    contar_comas+=1
+                    palabra = rdd[i+1][k+1:j].strip()
+                    lista_contenido.append(palabra)
+                    k=j
+                if rdd[i+1][j]==separador and lista_contenido == []:
+                    contar_comas+=1
+                    palabra = rdd[i+1][:j].strip()
+                    lista_contenido.append(palabra)
+                    k=j
+                if contar_comas == numero_comas:
+                    contar_comas=0
+                    palabra = rdd[i+1][j+1:].strip()
+                    lista_contenido.append(palabra)
+                    break
+            diccionario_contenido[i] = lista_contenido
+            #print(lista_contenido)
+            lista_contenido = []
+            print(diccionario_contenido)    
+        except(IndexError):
+            return diccionario_contenido
+
+def selector_1_indice_opcional(indice_original, indices_candidatos):
+    print("Se han detectado posibles cabeceras adicionales en el fichero, aqui se muestran las posibles combinaciones:\n")
+    for posicion in range(len(indices_candidatos)):
+        if "Unnamed" not in indice_original[posicion] and "Unnamed" not in indices_candidatos[posicion][posicion]:
+            print(f"{posicion+1}. {indice_original[posicion]}+{indices_candidatos[posicion][posicion]}")
+        else:
+            #Comprobar casilla sin unnamed en ambos indices mediante variable search
+            search = posicion
+            try:
+                while "Unnamed" in indice_original[search] or "Unnamed" in indices_candidatos[posicion][search]:
+                    search+=1
+                print(f"{posicion+1}. {indice_original[search]}+{indices_candidatos[posicion][search]}")
+            except IndexError:
+                break
+    select = input("Selecciona numero para combinar, otro para omitir\n:")
+    if select.isdigit():
+        select=int(select)
+        return indices_candidatos[select-1]
+    else:
+        return None
+    
+def actualizador_1_indice(indice_original, lista_seleccionada):
+    #print("lista_seleccionada:", lista_seleccionada)
+    if lista_seleccionada == None:
+        return indice_original
+    #print("lista_seleccionada:", lista_seleccionada)
+    count=-1
+    for i in lista_seleccionada:
+        if "Unnamed" in i:
+            count+=1
+    if count*2>len(lista_seleccionada):
+        lista_indice2 = []
+        k=0
+        for i in indice_original:
+            for j in range(len(i)):
+                if i[j] == "." and i[k:j] not in lista_indice2:
+                    lista_indice2.append(i[k:j])
+                    
+        lista_extra_sin_unnamed = []
+        contador = 0
+        contador2 = 0
+        for i in lista_seleccionada:
+            if "Unnamed" not in i and i not in lista_extra_sin_unnamed:
+                lista_extra_sin_unnamed.append(i)
+
+        for i in range(len(indice_original)):
+            for j in lista_indice2:
+                #Comprobar si campo j de indice sin unnamed es igual que campo 
+                if j.split('.')[0] == indice_original[i].split('.')[0]:
+                    try:
+                        contador=contador2//len(lista_indice2)
+                        indice_original[i] = indice_original[i]+ " " + lista_extra_sin_unnamed[contador]
+                        contador2+=1
+                    except IndexError:
+                        print("error")
+                        print("longitud lista_indice2:",len(lista_indice2))
+                        print("contador:",contador)
+                        print("longitud lista_extra_sin_unnamed:", len(lista_extra_sin_unnamed))
+                        print("longitud indice_original:", len(lista_extra_sin_unnamed))
+                        print("i:",i)
+                        print("j:",j)
+                        break
+        return indice_original
+    else:
+        #Convertir elementos lista_indices_extra a string y reemplazar palabras que empiecen por unnamed a espacio
+        indices_candidatos = [str(column).strip().replace(column, '') if str(column).startswith('Unnamed:') else str(column).strip() for column in lista_seleccionada]
+        
+        indice_modificado = [(str(a) + " " + str(b)).strip() for a, b in zip(indice_original, indices_candidatos)]
+        return indice_modificado
+
+def generar_diccionario(indice, datos):
+    diccionario_final = {}
+    lista_final = []
+    try:
+        for j in range(len(indice)):    
+            if "Unnamed" not in indice[j]:
+                for i in range(len(datos)):
+                    lista_final.append((datos[i][j]))
+                diccionario_final[indice[j]]=lista_final
+            lista_final=[]
+        return diccionario_final
+    except IndexError:
+        print("\033[91m##############################ERROR##########################\033[0m")
+        print("El archivo de datos csv tiene una estructura inconsistente.\n1. Por favor revise que el separador de los datos coincidan con el separador de las claves.")
+        print("2. Revise que el header seleccionado contenga todas las columnas de datos:\n")
+        return None
+    
+########EJECUCION###########
+
+separador = master_1_comprobador_separador(lista[0])
+numero_comas = master_1_contar_separador(lista[0])
+
+if lista_indices_extra != []:
+    lista_indice = actualizador_1_indice(generador_indice(lista[0]),selector_1_indice_opcional(generador_indice(lista[0]),lista_indices_extra))
+else:
+    lista_indice = generador_indice(lista[0])
+    
+diccionario_final = generar_diccionario(lista_indice, generador_contenido(lista))
